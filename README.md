@@ -59,7 +59,7 @@ npm install
 ⚠️ **IMPORTANTE: O aplicativo precisa ser executado com sudo** devido ao acesso necessário aos arquivos do sistema para controlar o backlight do teclado.
 
 ```bash
-npm run tauri dev
+npm run tauri dev # Esse comando executará o aplicativo, mas as alterações não serão aplicadas no teclado.
 ```
 
 ### 4. Compilar para Produção
