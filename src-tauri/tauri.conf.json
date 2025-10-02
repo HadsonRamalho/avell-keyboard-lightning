@@ -10,15 +10,19 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "trayIcon": {
-      "iconPath": "icons/32x32.png"
-    },
+    "withGlobalTauri": false,
     "windows": [
       {
+        "label": "main",
         "title": "avell-keyboard-lightning",
         "width": 800,
         "height": 600,
-        "visible": true
+        "visible": true,
+        "resizable": true,
+        "closable": true,
+        "minimizable": true,
+        "maximizable": true,
+        "skipTaskbar": false
       }
     ],
     "security": {
