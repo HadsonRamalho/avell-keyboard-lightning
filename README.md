@@ -26,12 +26,8 @@ O aplicativo verifica automaticamente se o hardware é compatível através dos 
 ## Pré-requisitos de Desenvolvimento
 
 ### Dependências do Sistema
-#### Arch Linux:
-```bash
-sudo pacman -S curl wget base-devel openssl pkgconf
-sudo pacman -S gtk3 webkit2gtk-4.1 libappindicator-gtk3 librsvg
-sudo pacman -S libx11 libxrandr libxi mesa
-```
+As dependências do aplicativo podem ser instaladas seguindo as instruções do Tauri:
+[https://v2.tauri.app/start/prerequisites/](https://v2.tauri.app/start/prerequisites/)
 
 ### Ferramentas de Desenvolvimento
 
