@@ -119,6 +119,9 @@ npm run tauri dev    # Aplicação completa, sem aplicar alterações no teclado
 
 # Build
 NO_STRIP=true npm run tauri build  # Build completo
+
+# Conceder permissão para executar o aplicativo
+chmod +x ./src-tauri/target/release/avell-keyboard-lightning
 ```
 
 ## Solução de Problemas
@@ -160,7 +163,7 @@ cat /sys/class/dmi/id/sys_vendor
 
 ## Licença
 
-Este projeto está sob a licença MIT.
+Este projeto está licenciado sob os termos da [Licença MIT](LICENSE).
 
 ## Autor
 
