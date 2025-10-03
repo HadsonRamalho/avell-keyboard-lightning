@@ -4,9 +4,11 @@ Um gerenciador de iluminação RGB para teclados de notebooks Avell, especificam
 
 ## Funcionalidades
 
+![Prévia do Teclado](public/screenshot_1.png)
+-  **Interface moderna**: Interface gráfica construída com React e Tauri
+![Controle de Cores](public/screenshot_2.png)
 -  **Controle de cores RGB**: Personalize a iluminação do seu teclado com qualquer cor
 -  **Sincronização com tela**: Captura as cores dominantes da tela para sincronizar com o teclado
--  **Interface moderna**: Interface gráfica construída com React e Tauri
 -  **System Tray**: Funciona em segundo plano com ícone na bandeja do sistema
 
 ## Compatibilidade
