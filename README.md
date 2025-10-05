@@ -1,4 +1,4 @@
-# Avell Keyboard Lightning Manager
+# Avell Keyboard Lightning Manager for Linux
 
 Um gerenciador de iluminação RGB para teclados de notebooks Avell, especificamente desenvolvido para o **Avell Storm 450r**. Este aplicativo permite controlar as cores do backlight do teclado e inclui a funcionalidade de captura de tela para sincronização de cores.
 
