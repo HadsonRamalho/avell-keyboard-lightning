@@ -10,8 +10,14 @@ use std::{
 };
 
 pub static SCREEN_CAPTURE_STATE: Mutex<Option<ScreenCaptureHandle>> = Mutex::new(None);
+pub static RAINBOW_EFFECT_STATE: Mutex<Option<RainbowEffectHandle>> = Mutex::new(None);
 
 pub struct ScreenCaptureHandle {
+    pub thread_handle: JoinHandle<()>,
+    pub shutdown_tx: mpsc::Sender<()>,
+}
+
+pub struct RainbowEffectHandle {
     pub thread_handle: JoinHandle<()>,
     pub shutdown_tx: mpsc::Sender<()>,
 }
@@ -139,6 +145,30 @@ fn update_color_using_screen(shutdown_rx: mpsc::Receiver<()>) -> io::Result<()> 
     Ok(())
 }
 
+fn rainbow_effect_loop(shutdown_rx: mpsc::Receiver<()>) -> io::Result<()> {
+    let mut hue: f32 = 0.0;
+    let saturation: f32 = 1.0;
+    let value: f32 = 1.0;
+
+    loop {
+        if shutdown_rx.try_recv().is_ok() {
+            break;
+        }
+
+        let (r, g, b) = hsv_to_rgb(hue, saturation, value);
+        update_led_color(r, g, b)?;
+
+        hue += 2.0;
+        if hue >= 360.0 {
+            hue = 0.0;
+        }
+
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn start_screen_capture() -> Result<String, String> {
     let mut state = SCREEN_CAPTURE_STATE.lock().unwrap();
@@ -146,6 +176,13 @@ pub fn start_screen_capture() -> Result<String, String> {
     if state.is_some() {
         return Err("Screen capture is already running".to_string());
     }
+
+    let mut rainbow_state = RAINBOW_EFFECT_STATE.lock().unwrap();
+    if let Some(handle) = rainbow_state.take() {
+        let _ = handle.shutdown_tx.send(());
+        let _ = handle.thread_handle.join();
+    }
+    drop(rainbow_state);
 
     let (shutdown_tx, shutdown_rx) = mpsc::channel();
 
@@ -183,5 +220,59 @@ pub fn stop_screen_capture() -> Result<String, String> {
 #[tauri::command]
 pub fn is_screen_capture_active() -> bool {
     let state = SCREEN_CAPTURE_STATE.lock().unwrap();
+    state.is_some()
+}
+
+#[tauri::command]
+pub fn start_rainbow_effect() -> Result<String, String> {
+    let mut rainbow_state = RAINBOW_EFFECT_STATE.lock().unwrap();
+
+    if rainbow_state.is_some() {
+        return Err("Rainbow effect is already running".to_string());
+    }
+
+    let mut screen_state = SCREEN_CAPTURE_STATE.lock().unwrap();
+    if let Some(handle) = screen_state.take() {
+        let _ = handle.shutdown_tx.send(());
+        let _ = handle.thread_handle.join();
+    }
+    drop(screen_state);
+
+    let (shutdown_tx, shutdown_rx) = mpsc::channel();
+
+    let thread_handle = thread::spawn(move || {
+        if let Err(e) = rainbow_effect_loop(shutdown_rx) {
+            eprintln!("Rainbow effect error: {}", e);
+        }
+    });
+
+    *rainbow_state = Some(RainbowEffectHandle {
+        thread_handle,
+        shutdown_tx,
+    });
+
+    Ok("Rainbow effect started".to_string())
+}
+
+#[tauri::command]
+pub fn stop_rainbow_effect() -> Result<String, String> {
+    let mut state = RAINBOW_EFFECT_STATE.lock().unwrap();
+
+    if let Some(handle) = state.take() {
+        let _ = handle.shutdown_tx.send(());
+
+        if let Err(e) = handle.thread_handle.join() {
+            return Err(format!("Error stopping rainbow effect: {:?}", e));
+        }
+
+        Ok("Rainbow effect stopped".to_string())
+    } else {
+        Err("Rainbow effect is not running".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn is_rainbow_effect_active() -> bool {
+    let state = RAINBOW_EFFECT_STATE.lock().unwrap();
     state.is_some()
 }

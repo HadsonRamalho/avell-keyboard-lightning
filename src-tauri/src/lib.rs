@@ -1,5 +1,6 @@
 use crate::lightning::{
-    is_screen_capture_active, start_screen_capture, stop_screen_capture, update_led_color,
+    is_rainbow_effect_active, is_screen_capture_active, start_rainbow_effect, start_screen_capture,
+    stop_rainbow_effect, stop_screen_capture, update_led_color,
 };
 use std::{fs, sync::Mutex};
 use tauri::{
@@ -72,6 +73,9 @@ pub fn run() {
             start_screen_capture,
             stop_screen_capture,
             is_screen_capture_active,
+            start_rainbow_effect,
+            stop_rainbow_effect,
+            is_rainbow_effect_active,
             show_main_window,
             hide_main_window
         ])
