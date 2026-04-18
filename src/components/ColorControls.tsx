@@ -41,7 +41,7 @@ function rgbToHex(r: number, g: number, b: number): string {
 		[r, g, b]
 			.map((x) => {
 				const hex = x.toString(16);
-				return hex.length === 1 ? "0" + hex : hex;
+				return hex.length === 1 ? `0${hex}` : hex;
 			})
 			.join("")
 	);
@@ -57,6 +57,10 @@ export function ColorControls({
 	const [isLoadingScreenCapture, setIsLoadingScreenCapture] = useState(false);
 	const [isRainbowEffectActive, setIsRainbowEffectActive] = useState(false);
 	const [isLoadingRainbowEffect, setIsLoadingRainbowEffect] = useState(false);
+	const [isBreathEffectActive, setIsBreathEffectActive] = useState(false);
+	const [isLoadingBreathEffect, setIsLoadingBreathEffect] = useState(false);
+	const [isTypingEffectActive, setIsTypingEffectActive] = useState(false);
+	const [isLoadingTypingEffect, setIsLoadingTypingEffect] = useState(false);
 
 	useEffect(() => {
 		const checkStatus = async () => {
@@ -92,12 +96,83 @@ export function ColorControls({
 				if (isScreenCaptureActive) {
 					setIsScreenCaptureActive(false);
 				}
+				if (isBreathEffectActive) {
+					setIsBreathEffectActive(false);
+				}
+				if (isTypingEffectActive) {
+					setIsTypingEffectActive(false);
+				}
 			}
 		} catch (error) {
 			console.error("Error toggling rainbow effect:", error);
 			alert(error);
 		} finally {
 			setIsLoadingRainbowEffect(false);
+		}
+	};
+
+	const handleBreathEffectToggle = async () => {
+		if (isLoadingBreathEffect) return;
+
+		setIsLoadingBreathEffect(true);
+
+		try {
+			if (isBreathEffectActive) {
+				await invoke("stop_breath_effect");
+				setIsBreathEffectActive(false);
+			} else {
+				await invoke("start_breath_effect", {
+					red: rgb.r,
+					green: rgb.g,
+					blue: rgb.b,
+				});
+				setIsBreathEffectActive(true);
+				if (isScreenCaptureActive) {
+					setIsScreenCaptureActive(false);
+				}
+				if (isRainbowEffectActive) {
+					setIsRainbowEffectActive(false);
+				}
+			}
+		} catch (error) {
+			console.error("Error toggling breath effect:", error);
+			alert(error);
+		} finally {
+			setIsLoadingBreathEffect(false);
+		}
+	};
+
+	const handleTypingEffectToggle = async () => {
+		if (isLoadingTypingEffect) return;
+
+		setIsLoadingTypingEffect(true);
+
+		try {
+			if (isTypingEffectActive) {
+				await invoke("stop_typing_heatmap");
+				setIsTypingEffectActive(false);
+			} else {
+				await invoke("start_typing_heatmap", {
+					red: rgb.r,
+					green: rgb.g,
+					blue: rgb.b,
+				});
+				setIsTypingEffectActive(true);
+				if (isScreenCaptureActive) {
+					setIsScreenCaptureActive(false);
+				}
+				if (isRainbowEffectActive) {
+					setIsRainbowEffectActive(false);
+				}
+				if (isBreathEffectActive) {
+					setIsBreathEffectActive(false);
+				}
+			}
+		} catch (error) {
+			console.error("Error toggling typing effect:", error);
+			alert(error);
+		} finally {
+			setIsLoadingTypingEffect(false);
 		}
 	};
 
@@ -143,6 +218,12 @@ export function ColorControls({
 				setIsScreenCaptureActive(true);
 				if (isRainbowEffectActive) {
 					setIsRainbowEffectActive(false);
+				}
+				if (isBreathEffectActive) {
+					setIsBreathEffectActive(false);
+				}
+				if (isTypingEffectActive) {
+					setIsTypingEffectActive(false);
 				}
 			}
 		} catch (error) {
@@ -191,6 +272,38 @@ export function ColorControls({
 						checked={isScreenCaptureActive}
 						onCheckedChange={handleScreenCaptureToggle}
 						disabled={isLoadingScreenCapture}
+					/>
+				</div>
+
+				<div className="flex items-center justify-between">
+					<div className="space-y-1">
+						<Label className="text-sm font-medium text-card-foreground">
+							Breath Effect
+						</Label>
+						<p className="text-xs text-muted-foreground">
+							A simple breath effect
+						</p>
+					</div>
+					<Switch
+						checked={isBreathEffectActive}
+						onCheckedChange={handleBreathEffectToggle}
+						disabled={isLoadingBreathEffect}
+					/>
+				</div>
+
+				<div className="flex items-center justify-between">
+					<div className="space-y-1">
+						<Label className="text-sm font-medium text-card-foreground">
+							Typing Heatmap Effect
+						</Label>
+						<p className="text-xs text-muted-foreground">
+							Increase the keyboard color heat while typing
+						</p>
+					</div>
+					<Switch
+						checked={isTypingEffectActive}
+						onCheckedChange={handleTypingEffectToggle}
+						disabled={isLoadingTypingEffect}
 					/>
 				</div>
 			</div>

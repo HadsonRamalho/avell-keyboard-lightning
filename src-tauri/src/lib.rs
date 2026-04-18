@@ -1,12 +1,18 @@
-use crate::lightning::{
-    is_rainbow_effect_active, is_screen_capture_active, start_rainbow_effect, start_screen_capture,
-    stop_rainbow_effect, stop_screen_capture, update_led_color,
-};
 use std::{fs, sync::Mutex};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WindowEvent,
+};
+
+use crate::lightning::{
+    effects::{
+        breath::{is_breath_effect_active, start_breath_effect, stop_breath_effect},
+        rainbow::{is_rainbow_effect_active, start_rainbow_effect, stop_rainbow_effect},
+        screen_capture::{is_screen_capture_active, start_screen_capture, stop_screen_capture},
+        typing::{is_typing_heatmap_active, start_typing_heatmap, stop_typing_heatmap},
+    },
+    update_led_color,
 };
 
 mod lightning;
@@ -77,7 +83,13 @@ pub fn run() {
             stop_rainbow_effect,
             is_rainbow_effect_active,
             show_main_window,
-            hide_main_window
+            hide_main_window,
+            start_breath_effect,
+            stop_breath_effect,
+            is_breath_effect_active,
+            start_typing_heatmap,
+            stop_typing_heatmap,
+            is_typing_heatmap_active
         ])
         .setup(|app| {
             if !is_supported_hardware() {
