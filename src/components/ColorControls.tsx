@@ -60,28 +60,29 @@ export function ColorControls({
 }: ColorControlsProps) {
 	const rgb = hexToRgb(selectedColor);
 	const [hexInput, setHexInput] = useState(selectedColor);
-	const [isScreenCaptureActive, setIsScreenCaptureActive] = useState(false);
-	const [isLoadingScreenCapture, setIsLoadingScreenCapture] = useState(false);
-	const [isRainbowEffectActive, setIsRainbowEffectActive] = useState(false);
-	const [isLoadingRainbowEffect, setIsLoadingRainbowEffect] = useState(false);
-	const [isBreathEffectActive, setIsBreathEffectActive] = useState(false);
-	const [isLoadingBreathEffect, setIsLoadingBreathEffect] = useState(false);
-	const [isTypingEffectActive, setIsTypingEffectActive] = useState(false);
-	const [isLoadingTypingEffect, setIsLoadingTypingEffect] = useState(false);
+	type EffectType = "none" | "rainbow" | "screen" | "breath" | "typing";
+	const [activeEffect, setActiveEffect] = useState<EffectType>("none");
+	const [isLoadingEffect, setIsLoadingEffect] = useState(false);
 	const [modules, setModules] = useState<ModuleStatus[]>([]);
 
 	useEffect(() => {
 		const checkStatus = async () => {
 			try {
-				const screenActive = (await invoke(
-					"is_screen_capture_active",
-				)) as boolean;
-				const rainbowActive = (await invoke(
-					"is_rainbow_effect_active",
-				)) as boolean;
-				const modulesData = (await invoke("get_modules_status")) as ModuleStatus[];
-				setIsScreenCaptureActive(screenActive);
-				setIsRainbowEffectActive(rainbowActive);
+				const [screenActive, rainbowActive, breathActive, typingActive, modulesData] = await Promise.all([
+					invoke("is_screen_capture_active") as Promise<boolean>,
+					invoke("is_rainbow_effect_active") as Promise<boolean>,
+					invoke("is_breath_effect_active") as Promise<boolean>,
+					invoke("is_typing_heatmap_active") as Promise<boolean>,
+					invoke("get_modules_status") as Promise<ModuleStatus[]>,
+				]);
+
+				let currentEffect: EffectType = "none";
+				if (screenActive) currentEffect = "screen";
+				else if (rainbowActive) currentEffect = "rainbow";
+				else if (breathActive) currentEffect = "breath";
+				else if (typingActive) currentEffect = "typing";
+
+				setActiveEffect(currentEffect);
 				setModules(modulesData);
 			} catch (error) {
 				console.error("Error checking status:", error);
@@ -91,100 +92,34 @@ export function ColorControls({
 		checkStatus();
 	}, []);
 
-	const handleRainbowEffectToggle = async () => {
-		if (isLoadingRainbowEffect) return;
-
-		setIsLoadingRainbowEffect(true);
+	const toggleEffect = async (effectName: EffectType, startCommand: string, stopCommand: string, payload?: any) => {
+		if (isLoadingEffect) return;
+		setIsLoadingEffect(true);
 
 		try {
-			if (isRainbowEffectActive) {
-				await invoke("stop_rainbow_effect");
-				setIsRainbowEffectActive(false);
+			if (activeEffect === effectName) {
+				await invoke(stopCommand);
+				setActiveEffect("none");
 			} else {
-				await invoke("start_rainbow_effect");
-				setIsRainbowEffectActive(true);
-				if (isScreenCaptureActive) {
-					setIsScreenCaptureActive(false);
+				if (payload) {
+					await invoke(startCommand, payload);
+				} else {
+					await invoke(startCommand);
 				}
-				if (isBreathEffectActive) {
-					setIsBreathEffectActive(false);
-				}
-				if (isTypingEffectActive) {
-					setIsTypingEffectActive(false);
-				}
+				setActiveEffect(effectName);
 			}
 		} catch (error) {
-			console.error("Error toggling rainbow effect:", error);
+			console.error(`Error toggling ${effectName} effect:`, error);
 			alert(error);
 		} finally {
-			setIsLoadingRainbowEffect(false);
+			setIsLoadingEffect(false);
 		}
 	};
 
-	const handleBreathEffectToggle = async () => {
-		if (isLoadingBreathEffect) return;
-
-		setIsLoadingBreathEffect(true);
-
-		try {
-			if (isBreathEffectActive) {
-				await invoke("stop_breath_effect");
-				setIsBreathEffectActive(false);
-			} else {
-				await invoke("start_breath_effect", {
-					red: rgb.r,
-					green: rgb.g,
-					blue: rgb.b,
-				});
-				setIsBreathEffectActive(true);
-				if (isScreenCaptureActive) {
-					setIsScreenCaptureActive(false);
-				}
-				if (isRainbowEffectActive) {
-					setIsRainbowEffectActive(false);
-				}
-			}
-		} catch (error) {
-			console.error("Error toggling breath effect:", error);
-			alert(error);
-		} finally {
-			setIsLoadingBreathEffect(false);
-		}
-	};
-
-	const handleTypingEffectToggle = async () => {
-		if (isLoadingTypingEffect) return;
-
-		setIsLoadingTypingEffect(true);
-
-		try {
-			if (isTypingEffectActive) {
-				await invoke("stop_typing_heatmap");
-				setIsTypingEffectActive(false);
-			} else {
-				await invoke("start_typing_heatmap", {
-					red: rgb.r,
-					green: rgb.g,
-					blue: rgb.b,
-				});
-				setIsTypingEffectActive(true);
-				if (isScreenCaptureActive) {
-					setIsScreenCaptureActive(false);
-				}
-				if (isRainbowEffectActive) {
-					setIsRainbowEffectActive(false);
-				}
-				if (isBreathEffectActive) {
-					setIsBreathEffectActive(false);
-				}
-			}
-		} catch (error) {
-			console.error("Error toggling typing effect:", error);
-			alert(error);
-		} finally {
-			setIsLoadingTypingEffect(false);
-		}
-	};
+	const handleRainbowEffectToggle = () => toggleEffect("rainbow", "start_rainbow_effect", "stop_rainbow_effect");
+	const handleScreenCaptureToggle = () => toggleEffect("screen", "start_screen_capture", "stop_screen_capture");
+	const handleBreathEffectToggle = () => toggleEffect("breath", "start_breath_effect", "stop_breath_effect", { red: rgb.r, green: rgb.g, blue: rgb.b });
+	const handleTypingEffectToggle = () => toggleEffect("typing", "start_typing_heatmap", "stop_typing_heatmap", { red: rgb.r, green: rgb.g, blue: rgb.b });
 
 	const handleRgbChange = async (channel: "r" | "g" | "b", value: string) => {
 		const numValue = Math.max(0, Math.min(255, Number.parseInt(value) || 0));
@@ -211,36 +146,6 @@ export function ColorControls({
 		} catch (error) {
 			console.error(error);
 			alert(error);
-		}
-	};
-
-	const handleScreenCaptureToggle = async () => {
-		if (isLoadingScreenCapture) return;
-
-		setIsLoadingScreenCapture(true);
-
-		try {
-			if (isScreenCaptureActive) {
-				await invoke("stop_screen_capture");
-				setIsScreenCaptureActive(false);
-			} else {
-				await invoke("start_screen_capture");
-				setIsScreenCaptureActive(true);
-				if (isRainbowEffectActive) {
-					setIsRainbowEffectActive(false);
-				}
-				if (isBreathEffectActive) {
-					setIsBreathEffectActive(false);
-				}
-				if (isTypingEffectActive) {
-					setIsTypingEffectActive(false);
-				}
-			}
-		} catch (error) {
-			console.error("Error toggling screen capture:", error);
-			alert(error);
-		} finally {
-			setIsLoadingScreenCapture(false);
 		}
 	};
 
@@ -275,9 +180,9 @@ export function ColorControls({
 						</p>
 					</div>
 					<Switch
-						checked={isRainbowEffectActive}
+						checked={activeEffect === "rainbow"}
 						onCheckedChange={handleRainbowEffectToggle}
-						disabled={isLoadingRainbowEffect}
+						disabled={isLoadingEffect}
 					/>
 				</div>
 
@@ -291,9 +196,9 @@ export function ColorControls({
 						</p>
 					</div>
 					<Switch
-						checked={isScreenCaptureActive}
+						checked={activeEffect === "screen"}
 						onCheckedChange={handleScreenCaptureToggle}
-						disabled={isLoadingScreenCapture}
+						disabled={isLoadingEffect}
 					/>
 				</div>
 
@@ -307,9 +212,9 @@ export function ColorControls({
 						</p>
 					</div>
 					<Switch
-						checked={isBreathEffectActive}
+						checked={activeEffect === "breath"}
 						onCheckedChange={handleBreathEffectToggle}
-						disabled={isLoadingBreathEffect}
+						disabled={isLoadingEffect}
 					/>
 				</div>
 
@@ -323,9 +228,9 @@ export function ColorControls({
 						</p>
 					</div>
 					<Switch
-						checked={isTypingEffectActive}
+						checked={activeEffect === "typing"}
 						onCheckedChange={handleTypingEffectToggle}
-						disabled={isLoadingTypingEffect}
+						disabled={isLoadingEffect}
 					/>
 				</div>
 			</div>
@@ -372,7 +277,7 @@ export function ColorControls({
 			</div>
 
 			<div
-				className={`space-y-3 ${isScreenCaptureActive || isRainbowEffectActive ? "opacity-50 pointer-events-none" : ""}`}
+				className={`space-y-3 ${activeEffect !== "none" ? "opacity-50 pointer-events-none" : ""}`}
 			>
 				<Label className="text-sm font-medium text-card-foreground">
 					Predefined Colors
@@ -396,14 +301,14 @@ export function ColorControls({
               `}
 							style={{ backgroundColor: preset.value }}
 							title={preset.name}
-							disabled={isScreenCaptureActive}
+							disabled={activeEffect !== "none"}
 						/>
 					))}
 				</div>
 			</div>
 
 			<div
-				className={`space-y-3 ${isScreenCaptureActive || isRainbowEffectActive ? "opacity-50 pointer-events-none" : ""}`}
+				className={`space-y-3 ${activeEffect !== "none" ? "opacity-50 pointer-events-none" : ""}`}
 			>
 				<Label
 					htmlFor="color-picker"
@@ -421,13 +326,13 @@ export function ColorControls({
 							setHexInput(e.target.value);
 						}}
 						className="h-12 w-full rounded-lg cursor-pointer bg-secondary border-2 border-border"
-						disabled={isScreenCaptureActive}
+						disabled={activeEffect !== "none"}
 					/>
 				</div>
 			</div>
 
 			<div
-				className={`space-y-3 ${isScreenCaptureActive || isRainbowEffectActive ? "opacity-50 pointer-events-none" : ""}`}
+				className={`space-y-3 ${activeEffect !== "none" ? "opacity-50 pointer-events-none" : ""}`}
 			>
 				<Label className="text-sm font-medium text-card-foreground">RGB</Label>
 				<div className="grid grid-cols-3 gap-3">
@@ -443,7 +348,7 @@ export function ColorControls({
 							value={rgb.r}
 							onChange={(e) => handleRgbChange("r", e.target.value)}
 							className="bg-secondary border-border text-card-foreground"
-							disabled={isScreenCaptureActive}
+							disabled={activeEffect !== "none"}
 						/>
 					</div>
 					<div className="space-y-2">
@@ -458,7 +363,7 @@ export function ColorControls({
 							value={rgb.g}
 							onChange={(e) => handleRgbChange("g", e.target.value)}
 							className="bg-secondary border-border text-card-foreground"
-							disabled={isScreenCaptureActive}
+							disabled={activeEffect !== "none"}
 						/>
 					</div>
 					<div className="space-y-2">
@@ -473,14 +378,14 @@ export function ColorControls({
 							value={rgb.b}
 							onChange={(e) => handleRgbChange("b", e.target.value)}
 							className="bg-secondary border-border text-card-foreground"
-							disabled={isScreenCaptureActive}
+							disabled={activeEffect !== "none"}
 						/>
 					</div>
 				</div>
 			</div>
 
 			<div
-				className={`space-y-3 ${isScreenCaptureActive || isRainbowEffectActive ? "opacity-50 pointer-events-none" : ""}`}
+				className={`space-y-3 ${activeEffect !== "none" ? "opacity-50 pointer-events-none" : ""}`}
 			>
 				<Label
 					htmlFor="hex-input"
@@ -496,7 +401,7 @@ export function ColorControls({
 					placeholder="#8B5CF6"
 					className="bg-secondary border-border text-card-foreground font-mono"
 					maxLength={7}
-					disabled={isScreenCaptureActive}
+					disabled={activeEffect !== "none"}
 				/>
 			</div>
 
@@ -506,13 +411,17 @@ export function ColorControls({
 				onClick={() => {
 					handleConfirm();
 				}}
-				disabled={isScreenCaptureActive || isRainbowEffectActive}
+				disabled={activeEffect !== "none"}
 			>
-				{isScreenCaptureActive
+				{activeEffect === "screen"
 					? "Screen Sync Active"
-					: isRainbowEffectActive
+					: activeEffect === "rainbow"
 						? "Rainbow Effect Active"
-						: "Apply Configuration"}
+                        : activeEffect === "breath"
+                            ? "Breath Effect Active"
+                            : activeEffect === "typing"
+                                ? "Typing Heatmap Active"
+						        : "Apply Configuration"}
 			</Button>
 		</Card>
 	);

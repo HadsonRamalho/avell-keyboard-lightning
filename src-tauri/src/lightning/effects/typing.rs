@@ -47,20 +47,20 @@ fn typing_heatmap_loop(shutdown_rx: Arc<Mutex<mpsc::Receiver<()>>>) -> std::io::
     Ok(())
 }
 
-fn keyboard_listener(shutdown_rx: Arc<Mutex<mpsc::Receiver<()>>>) {
-    let listener = thread::spawn(move || {
-        let _ = listen(move |event| {
-            if shutdown_rx.lock().unwrap().try_recv().is_ok() {
-                std::process::exit(0);
-            }
+use std::sync::Once;
 
-            if let EventType::KeyPress(_) = event.event_type {
-                TYPING_COUNTER.fetch_add(1, Ordering::Relaxed);
-            }
+static INIT_LISTENER: Once = Once::new();
+
+fn ensure_global_listener() {
+    INIT_LISTENER.call_once(|| {
+        thread::spawn(|| {
+            let _ = rdev::listen(move |event| {
+                if let EventType::KeyPress(_) = event.event_type {
+                    TYPING_COUNTER.fetch_add(1, Ordering::Relaxed);
+                }
+            });
         });
     });
-
-    let _ = listener.join();
 }
 
 #[tauri::command]
@@ -71,19 +71,11 @@ pub fn start_typing_heatmap() -> Result<String, String> {
     let shutdown_rx = Arc::new(Mutex::new(shutdown_rx));
 
     let shutdown_rx_for_effect = Arc::clone(&shutdown_rx);
-    let shutdown_rx_for_listener = Arc::clone(&shutdown_rx);
+
+    ensure_global_listener();
 
     let thread_handle = thread::spawn(move || {
-        let effect_thread = thread::spawn(move || {
-            let _ = typing_heatmap_loop(shutdown_rx_for_effect);
-        });
-
-        let listener_thread = thread::spawn(move || {
-            keyboard_listener(shutdown_rx_for_listener);
-        });
-
-        let _ = effect_thread.join();
-        let _ = listener_thread.join();
+        let _ = typing_heatmap_loop(shutdown_rx_for_effect);
     });
 
     let mut state = TYPING_HEATMAP_STATE.lock().unwrap();
