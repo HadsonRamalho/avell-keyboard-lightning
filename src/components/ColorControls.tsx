@@ -11,6 +11,13 @@ interface ColorControlsProps {
 	onColorChange: (color: string) => void;
 }
 
+interface ModuleStatus {
+	id: string;
+	name: string;
+	available: boolean;
+	enabled: boolean;
+}
+
 const presetColors = [
 	{ name: "Purple", value: "#8B5CF6" },
 	{ name: "Blue", value: "#3B82F6" },
@@ -61,6 +68,7 @@ export function ColorControls({
 	const [isLoadingBreathEffect, setIsLoadingBreathEffect] = useState(false);
 	const [isTypingEffectActive, setIsTypingEffectActive] = useState(false);
 	const [isLoadingTypingEffect, setIsLoadingTypingEffect] = useState(false);
+	const [modules, setModules] = useState<ModuleStatus[]>([]);
 
 	useEffect(() => {
 		const checkStatus = async () => {
@@ -71,8 +79,10 @@ export function ColorControls({
 				const rainbowActive = (await invoke(
 					"is_rainbow_effect_active",
 				)) as boolean;
+				const modulesData = (await invoke("get_modules_status")) as ModuleStatus[];
 				setIsScreenCaptureActive(screenActive);
 				setIsRainbowEffectActive(rainbowActive);
+				setModules(modulesData);
 			} catch (error) {
 				console.error("Error checking status:", error);
 			}
@@ -234,6 +244,18 @@ export function ColorControls({
 		}
 	};
 
+	const handleModuleToggle = async (id: string, enabled: boolean) => {
+		try {
+			await invoke("set_module_enabled", { id, enabled });
+			setModules((prev) =>
+				prev.map((m) => (m.id === id ? { ...m, enabled } : m))
+			);
+		} catch (error) {
+			console.error("Error toggling module:", error);
+			alert(error);
+		}
+	};
+
 	return (
 		<Card className="p-6 space-y-6 bg-card">
 			<div>
@@ -305,6 +327,47 @@ export function ColorControls({
 						onCheckedChange={handleTypingEffectToggle}
 						disabled={isLoadingTypingEffect}
 					/>
+				</div>
+			</div>
+
+			<div className="space-y-3">
+				<Label className="text-sm font-medium text-card-foreground">
+					Module Sync Integrations
+				</Label>
+				<p className="text-xs text-muted-foreground mb-2">
+					Select which apps should sync with the keyboard color
+				</p>
+				<div className="space-y-2">
+					{modules.map((module) => (
+						<div
+							key={module.id}
+							className="flex items-center justify-between bg-secondary/30 p-2 rounded-md"
+						>
+							<div className="flex items-center space-x-2">
+								<span
+									className={`text-sm ${
+										module.available
+											? "text-card-foreground"
+											: "text-muted-foreground line-through"
+									}`}
+								>
+									{module.name}
+								</span>
+								{!module.available && (
+									<span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+										Not Found
+									</span>
+								)}
+							</div>
+							<Switch
+								checked={module.enabled && module.available}
+								onCheckedChange={(checked) =>
+									handleModuleToggle(module.id, checked)
+								}
+								disabled={!module.available}
+							/>
+						</div>
+					))}
 				</div>
 			</div>
 

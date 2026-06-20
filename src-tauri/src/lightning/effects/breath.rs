@@ -8,9 +8,7 @@ use std::{
 use crate::lightning::{
     effects::rainbow::rgb_to_hex,
     hsv_to_rgb,
-    obsidian::{update_obsidian_theme, ObsidianTheme},
     rgb_to_hsv, stop_all_effects, update_led_color,
-    zed::{update_zed_theme, ZedTheme},
 };
 
 pub static BREATH_EFFECT_STATE: Mutex<Option<BreathEffectHandle>> = Mutex::new(None);
@@ -39,22 +37,7 @@ fn breath_effect_loop(
         let (r, g, b) = hsv_to_rgb(h, s, value);
         update_led_color(r, g, b)?;
 
-        let hex_color = rgb_to_hex(r, g, b);
-        update_obsidian_theme(&ObsidianTheme {
-            status_bar_background: Some(hex_color.clone()),
-        })?;
-        update_zed_theme(&ZedTheme {
-            icon_accent: Some(hex_color.clone()),
-            icon: Some(hex_color.clone()),
-            string_primary: None,
-            type_color: None,
-            panel_indent_guide: Some(hex_color.clone()),
-            scrollbar_thumb_background: Some(hex_color.clone()),
-            scrollbar_track_border: Some(hex_color.clone()),
-            editor_active_line_number: Some(hex_color.clone()),
-            editor_indent_guide_active: Some(hex_color.clone()),
-            ghost_element_active: Some(hex_color.clone()),
-        })?;
+        crate::lightning::theme_sync::sync_all_themes(r, g, b);
 
         if increasing {
             value += 0.06;

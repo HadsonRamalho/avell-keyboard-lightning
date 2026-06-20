@@ -24,3 +24,4 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 scrap = "0.5.0"
 rdev = "0.5.3"
+lazy_static = "1.5.0"

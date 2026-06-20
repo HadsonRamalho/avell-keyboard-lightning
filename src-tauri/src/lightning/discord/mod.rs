@@ -1,56 +1,56 @@
 use std::{
+    env,
     fs::OpenOptions,
-    io::{self, Read, Write},
+    io::{self, Write},
+    path::PathBuf,
 };
 
-fn get_quickcss() -> String {
-    let path = "/home/hadson/.config/legcord/quickCss.css".to_string();
-    path
+fn get_quickcss_path() -> io::Result<PathBuf> {
+    let home = env::var("HOME").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
+    let path = PathBuf::from(home).join(".config/legcord/quickCss.css");
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    Ok(path)
 }
 
 pub struct DiscordTheme {
     pub accent_color: String,
     pub accent_color2: String,
     pub link_color: String,
-    pub text_brightest: String,
-    pub text_brighter: String,
-    pub text_bright: String,
     pub background_primary: String,
     pub background_secondary: String,
     pub background_tertiary: String,
 }
 
 pub fn update_discord_theme(theme_config: &DiscordTheme) -> io::Result<()> {
-    let json = format!(
-        "
-        @import url(\"https://mwittrien.github.io/BetterDiscordAddons/Themes/DiscordRecolor/DiscordRecolor.css\");
-
-        :root {{
-            --accentcolor: {accent_color};
-            --accentcolor2: {accent_color2};
-            --linkcolor: {link_color};
-
-            --font: gg sans;
-
-            --backgroundprimary: {background_primary};
-            --backgroundsecondary: {background_secondary};
-            --backgroundtertiary: {background_tertiary};
-
+    let css = format!(
+        "@import url(\"https://mwittrien.github.io/BetterDiscordAddons/Themes/DiscordRecolor/DiscordRecolor.css\");\n\
+        \n\
+        :root {{\n\
+            --accentcolor: {accent_color};\n\
+            --accentcolor2: {accent_color2};\n\
+            --linkcolor: {link_color};\n\
+            --font: gg sans;\n\
+            --backgroundprimary: {background_primary};\n\
+            --backgroundsecondary: {background_secondary};\n\
+            --backgroundtertiary: {background_tertiary};\n\
         }}",
-        accent_color = theme_config.accent_color.clone(),
-        accent_color2 = theme_config.accent_color2.clone(),
-        link_color = theme_config.link_color.clone(),
-
-        background_primary = theme_config.background_primary.clone(),
-        background_secondary = theme_config.background_secondary.clone(),
-        background_tertiary = theme_config.background_tertiary.clone(),
+        accent_color = theme_config.accent_color,
+        accent_color2 = theme_config.accent_color2,
+        link_color = theme_config.link_color,
+        background_primary = theme_config.background_primary,
+        background_secondary = theme_config.background_secondary,
+        background_tertiary = theme_config.background_tertiary,
     );
 
-    let path = get_quickcss();
-
-    let mut file = OpenOptions::new().write(true).open(&path)?;
-
-    file.write_all(json.as_bytes())?;
+    let path = get_quickcss_path()?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&path)?;
+    file.write_all(css.as_bytes())?;
 
     Ok(())
 }

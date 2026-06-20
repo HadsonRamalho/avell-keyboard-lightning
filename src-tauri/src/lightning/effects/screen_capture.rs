@@ -7,9 +7,7 @@ use std::{
 };
 
 use crate::lightning::{
-    effects::rainbow::rgb_to_hex,
     hsv_to_rgb, rgb_to_hsv, stop_all_effects, update_led_color,
-    zed::{update_zed_theme, ZedTheme},
 };
 
 pub static SCREEN_CAPTURE_STATE: Mutex<Option<ScreenCaptureHandle>> = Mutex::new(None);
@@ -125,19 +123,7 @@ fn update_color_using_screen(shutdown_rx: mpsc::Receiver<()>) -> io::Result<()> 
 
         update_led_color(r_final, g_final, b_final)?;
 
-        let hex_color = rgb_to_hex(r_final, g_final, b_final);
-        update_zed_theme(&ZedTheme {
-            icon_accent: Some(hex_color.clone()),
-            icon: Some(hex_color.clone()),
-            string_primary: None,
-            type_color: None,
-            panel_indent_guide: Some(hex_color.clone()),
-            scrollbar_thumb_background: Some(hex_color.clone()),
-            scrollbar_track_border: Some(hex_color.clone()),
-            editor_active_line_number: Some(hex_color.clone()),
-            editor_indent_guide_active: Some(hex_color.clone()),
-            ghost_element_active: Some(hex_color.clone()),
-        })?;
+        crate::lightning::theme_sync::sync_all_themes(r_final, g_final, b_final);
 
         thread::sleep(Duration::from_millis(50));
     }

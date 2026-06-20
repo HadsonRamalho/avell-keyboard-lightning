@@ -6,17 +6,16 @@ use std::{
 
 use crate::lightning::effects::screen_capture::SCREEN_CAPTURE_STATE;
 use crate::lightning::effects::typing::TYPING_HEATMAP_STATE;
-use crate::lightning::{effects::breath::BREATH_EFFECT_STATE, zed::update_zed_theme};
-use crate::lightning::{
-    effects::rainbow::{rgb_to_hex, RAINBOW_EFFECT_STATE},
-    zed::ZedTheme,
-};
+use crate::lightning::effects::breath::BREATH_EFFECT_STATE;
+use crate::lightning::effects::rainbow::RAINBOW_EFFECT_STATE;
 
-pub mod brokers_frontend;
 pub mod discord;
 pub mod effects;
 pub mod obsidian;
 pub mod zed;
+pub mod theme_sync;
+
+use crate::lightning::theme_sync::sync_all_themes;
 
 #[tauri::command]
 pub fn update_led_color(red: u8, green: u8, blue: u8) -> io::Result<()> {
@@ -28,19 +27,7 @@ pub fn update_led_color(red: u8, green: u8, blue: u8) -> io::Result<()> {
 
     file.write_all(data.as_bytes())?;
 
-    let hex_color = rgb_to_hex(red, green, blue);
-    update_zed_theme(&ZedTheme {
-        icon_accent: Some(hex_color.clone()),
-        icon: Some(hex_color.clone()),
-        string_primary: None,
-        type_color: None,
-        panel_indent_guide: Some(hex_color.clone()),
-        scrollbar_thumb_background: Some(hex_color.clone()),
-        scrollbar_track_border: Some(hex_color.clone()),
-        editor_active_line_number: Some(hex_color.clone()),
-        editor_indent_guide_active: Some(hex_color.clone()),
-        ghost_element_active: Some(hex_color.clone()),
-    })?;
+    sync_all_themes(red, green, blue);
 
     Ok(())
 }

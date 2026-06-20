@@ -1,7 +1,8 @@
 use std::{
+    env,
     fs::OpenOptions,
     io::{self, Write},
-    path::Path,
+    path::PathBuf,
 };
 
 pub struct ObsidianTheme {
@@ -9,21 +10,28 @@ pub struct ObsidianTheme {
 }
 
 pub fn update_obsidian_theme(theme_config: &ObsidianTheme) -> io::Result<()> {
-    let json = format!(
-        "body {{
-            --status-bar-background: {status_bar_background};
-        }}",
+    let css = format!(
+        "body {{\n    --status-bar-background: {status_bar_background};\n}}",
         status_bar_background = theme_config
             .status_bar_background
-            .clone()
-            .unwrap_or("".to_string())
+            .as_deref()
+            .unwrap_or("")
     );
 
-    let path = Path::new("/home/hadson/Documentos/Obsidian Vault/.obsidian/snippets/headers.css");
+    let home = env::var("HOME").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
+    let path = PathBuf::from(home)
+        .join("Documentos/Obsidian Vault/.obsidian/snippets/headers.css");
 
-    let mut file = OpenOptions::new().write(true).open(&path)?;
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
 
-    file.write_all(json.as_bytes())?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&path)?;
+    file.write_all(css.as_bytes())?;
 
     Ok(())
 }

@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 use std::{fs, sync::Mutex};
 use tauri::{
     menu::{Menu, MenuItem},
@@ -12,6 +14,7 @@ use crate::lightning::{
         screen_capture::{is_screen_capture_active, start_screen_capture, stop_screen_capture},
         typing::{is_typing_heatmap_active, start_typing_heatmap, stop_typing_heatmap},
     },
+    theme_sync::{get_modules_status, set_module_enabled},
     update_led_color,
 };
 
@@ -89,7 +92,9 @@ pub fn run() {
             is_breath_effect_active,
             start_typing_heatmap,
             stop_typing_heatmap,
-            is_typing_heatmap_active
+            is_typing_heatmap_active,
+            get_modules_status,
+            set_module_enabled
         ])
         .setup(|app| {
             if !is_supported_hardware() {
